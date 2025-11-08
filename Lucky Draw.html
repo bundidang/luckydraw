@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Random Name Dev By SuperMink</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --primary-color:#1f2937;         /* slate-800 */
+  --accent-color:#ef4444;          /* red-500 */
+  --button-color:#ff5a1f;          /* modern orange */
+  --background-color:#f3f4f6;      /* gray-100 */
+  --slot-height:150px;
+  --bg-image:none;
+  --slot-text-color:#f9fafb;       /* gray-50 */
+  --button-text-color:#ffffff;
+  --slot-background-color:#111827; /* gray-900 */
+  --container-max-width-vw:46.875vw;
+  --slot-font-size-vw:2.34375vw;
+  --button-font-size-vw:calc(var(--slot-font-size-vw)*0.7);
+  --container-vertical-alignment:center;
+  --container-opacity:0.5;
+  
+  /* เพิ่มตัวแปรเพื่อควบคุมการซ่อนกรอบเมื่อ Opacity เป็น 0 */
+  --container-box-shadow:0 10px 30px rgba(0,0,0,.06);
+  --container-border-radius:18px;
+}
+
+*{box-sizing:border-box}
+html,body{
+  height:100%;
+  margin:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background-color:var(--background-color);
+  font-family:'Prompt',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  color:var(--primary-color);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  letter-spacing:.2px;
+  transition:background-color .5s ease
+}
+
+/* **MODIFIED**: ป้องกันการเลือกข้อความบน body โดยค่าเริ่มต้น */
+body {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+/* **NEW**: อนุญาตให้เลือกข้อความใน textarea และ input ได้ */
+textarea, input {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+}
+
+.viewport{
+  width:100vw;height:100vh;
+  display:flex;flex-direction:column;
+  align-items:var(--container-vertical-alignment);justify-content:center;
+  background:var(--background-color) var(--bg-image) center/cover no-repeat;
+  transition:background .5s ease;
+  padding: 0 4vw; 
+}
+
+.container{
+  background:rgba(255,255,255,var(--container-opacity)); 
+  padding:2vw;
+  /* ใช้ตัวแปรเพื่อควบคุมรัศมีของขอบ */
+  border-radius:var(--container-border-radius);
+  width:100%; 
+  max-width:var(--container-max-width-vw);
+  min-width:250px; 
+  text-align:center;
+  /* ใช้ตัวแปรเพื่อควบคุมเงา */
+  box-shadow:var(--container-box-shadow);
+}
+
+.slot-container{
+  height:7.8125vw;max-height:150px;overflow:hidden;border:none;border-radius:14px;
+  margin-bottom:30px;background:var(--slot-background-color);position:relative
+}
+#slotRoll{transition:transform 3s cubic-bezier(.2,.8,.2,1);transform:translateY(0)}
+
+.slot-item{
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  height:7.8125vw;max-height:150px;
+  color:var(--slot-text-color);
+  white-space:normal;line-height:1.075;padding:0 16px;text-align:center
+}
+.slot-name{font-size:var(--slot-font-size-vw);font-weight:800}
+.slot-company{font-size:calc(var(--slot-font-size-vw)*0.6);opacity:.96;margin-top:.2em;font-weight:500}
+
+button{
+  width:100%;padding:18px;border:none;border-radius:12px;
+  font-size:1.08rem;font-weight:700;cursor:pointer;
+  transition:transform .06s, box-shadow .2s, background-color .3s
+}
+
+#pickButton{
+  width:33.33%;max-width:300px;margin:0 auto;display:block;
+  font-size:var(--button-font-size-vw);font-weight:800;padding:.6vw 1vw;min-height:54px;
+  background:var(--button-color);color:var(--button-text-color);
+  box-shadow:0 8px 20px rgba(255,90,31,.25)
+}
+#pickButton:hover:not(:disabled){transform:translateY(-1px)}
+#pickButton:active:not(:disabled){transform:translateY(0)}
+button:disabled{cursor:not-allowed;color:#94a3b8}
+#pickButton:disabled{background:#9aa0a6;color:#eceff1;opacity:1;box-shadow:none}
+#pickButton.loading{cursor:progress}
+#pickButton.loading .spinner-icon{display:inline-block;margin-right:.5rem;transform-origin:center;animation:spin 1s linear infinite}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+/* FAB */
+.fab-stack{position:fixed;top:24px;right:24px;display:flex;flex-direction:column;gap:14px;z-index:1000}
+.fab-stack.hidden{opacity:0;pointer-events:none}
+.fab-stack .floating-button{
+  width:60px;height:60px;border-radius:16px;
+  color:#ffffff;
+  font-size:24px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;
+  /* แก้บั๊ก: ปรับ line-height เพื่อให้ไอคอนอยู่กึ่งกลาง */
+  line-height:1.0; 
+  border:none;
+  box-shadow:0 10px 20px rgba(0,0,0,.18);transition:transform .06s,filter .2s
+}
+.fab-stack .floating-button:hover{transform:translateY(-1px);filter:saturate(1.1)}
+
+/* **MODIFIED**: ปรับ font-size ของ Settings Icon เล็กน้อยเพื่อแก้ไขการแสดงผล */
+#settingsButton{background:#92CEA8; color:#ffffff; font-size:32px} 
+#settingsButton:hover{filter:brightness(1.05)}
+#listToggleButton{background:#A8D1E7; color:#ffffff;} 
+#fullscreenButton{background:#AF9F8C; color:#ffffff; font-size:30px}
+#forceLockButton{background:#FFBBDA; color:#ffffff; font-size:26px} 
+
+/* Modal base */
+.modal{position:fixed;z-index:2000;inset:0;display:none;justify-content:center;align-items:center;background:rgba(0,0,0,.55)}
+.modal-content{
+  background:#ffffff;margin:auto;padding:26px;border:1px solid #e5e7eb;width:88%;max-width:640px;max-height:90vh;overflow-y:auto;
+  border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,.15);text-align:left
+}
+.close-button{color:#9ca3af;float:right;font-size:28px;font-weight:800}
+.close-button:hover{color:#111827;cursor:pointer}
+
+/* settings form */
+.setting-group{margin-bottom:18px;padding:14px;border:1px dashed #e5e7eb;border-radius:12px;background:#fafafa}
+.setting-group label{display:block;margin-bottom:6px;font-weight:700}
+.setting-group input[type="text"],
+.setting-group input[type="number"],
+.setting-group input[type="color"]{
+  width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#fff
+}
+.setting-group input[type="color"]{height:42px;max-width:72px;padding:0}
+.color-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px}
+
+.alignment-controls{display:flex;gap:10px;margin-top:10px}
+.alignment-controls button{
+  flex:1 1 auto;margin:0;padding:10px;font-size:1rem;border-radius:10px;background:#3b82f6;color:#fff
+}
+.alignment-controls button.active{background:#10b981}
+
+/* Gallery */
+#thumbnailGallery{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;border:1px solid #e5e7eb;padding:10px;border-radius:12px;max-height:220px;overflow:auto;position:relative;background:#fff}
+#thumbnailGallery.dragover{outline:2px dashed #8b5cf6;outline-offset:4px}
+.thumbnail-item{position:relative;width:86px;height:48px;overflow:hidden;border:3px solid transparent;border-radius:10px;cursor:grab;transition:border-color .2s,transform .06s,box-shadow .2s;box-shadow:0 4px 10px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;background:#fff}
+.thumbnail-item.active{border-color:#ff5a1f;box-shadow:0 0 0 3px rgba(255,90,31,.22)}
+.thumbnail-item img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.thumbnail-number,.current-badge{
+  position:absolute;background:rgba(0,0,0,.6);color:#fff;font-size:10px;padding:2px 6px;border-radius:999px;font-weight:700
+}
+.thumbnail-number{top:4px;left:4px}
+.current-badge{bottom:4px;right:4px}
+.thumbnail-delete-button{position:absolute;top:0;right:0;width:16px;height:16px;background:#ef4444;color:#fff;border:none;border-radius:0 6px 0 6px;font-size:11px;line-height:16px;text-align:center;padding:0;margin:0;cursor:pointer;opacity:0;transition:opacity .2s}
+.thumbnail-item:hover .thumbnail-delete-button{opacity:1}
+.drag-handle{position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;line-height:1;padding:2px 4px;border-radius:4px;user-select:none}
+/* **FIXED**: เปลี่ยน z-index เป็น 9999 เพื่อแก้ไขปัญหาภาพ Ghost ลอยทับซ้อน */
+.dragging-ghost{position:fixed;z-index:9999;pointer-events:none;opacity:.95;transform:scale(1.02);box-shadow:0 12px 28px rgba(0,0,0,.25);border-radius:8px;overflow:hidden}
+.thumb-placeholder{width:86px;height:48px;border:2px dashed var(--accent-color);border-radius:8px}
+.insert-line{position:absolute;width:2px;background:var(--accent-color);top:0;bottom:0;z-index:2500;pointer-events:none}
+.gallery-meta{margin-top:6px;font-size:.92rem;color:#6b7280}
+.note{color:#6b7280;font-size:.9rem}
+
+/* List modal sizing parity */
+#listModal .modal-content{max-width:640px}
+#listModal textarea#nameList{width:100%;min-height:220px;font:inherit;border-radius:12px;padding:12px;border:1px solid #e5e7eb}
+#listModal #historyPanel{width:100%}
+
+/* เพิ่มสไตล์สำหรับไอคอน setting ใน List Modal */
+#listModal .setting-icon {
+  margin-left: 8px; /* เว้นระยะห่างจากตัวเลข */
+  font-size: 1.2em;
+  color: #94a3b8; /* สีไอคอน */
+  cursor: pointer;
+  transition: color 0.2s;
+  vertical-align: middle;
+}
+#listModal .setting-icon:hover {
+  color: var(--primary-color);
+}
+
+
+@media (max-width:600px){
+  .fab-stack{ top:12px; right:12px; gap:10px }
+  .fab-stack .floating-button{ width:52px; height:52px; font-size:20px; border-radius:14px }
+  :root{--slot-font-size-vw:2rem;--button-font-size-vw:1.35rem}
+  .color-settings-grid{grid-template-columns:1fr}
+}
+
+@media (prefers-reduced-motion: reduce){
+  #slotRoll{transition-duration:.01ms!important}
+  *{scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body oncontextmenu="return false">
+<div class="viewport" id="viewport" tabindex="0">
+  <div class="container">
+    <div class="slot-container"><div id="slotRoll"></div></div>
+    <button id="pickButton">DRAW</button>
+  </div>
+
+  <div id="fabStack" class="fab-stack" aria-label="เมนูลอย">
+    <button id="settingsButton" class="floating-button" title="ตั้งค่า (S)" aria-label="ตั้งค่า">⚙️</button>
+    <button id="listToggleButton" class="floating-button" title="รายชื่อ/ประวัติ (L)" aria-label="รายชื่อ">👤</button>
+    <button id="forceLockButton" class="floating-button" title="Force Lock (F)" aria-label="Force Lock">❤️</button>
+    <button id="fullscreenButton" class="floating-button" title="เต็มจอ" aria-label="เต็มจอ">⛶</button>
+  </div>
+
+  <div id="listModal" class="modal" aria-modal="true" role="dialog">
+    <div class="modal-content">
+      <span class="close-button" data-close="list" role="button" aria-label="ปิดหน้าต่างรายชื่อ">&times;</span>
+      <h3 style="margin-top:0">รายการชื่อและการจัดการ</h3>
+      <button id="resetListButton" style="background:#10b981;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:800;margin-top:0;margin-bottom:16px">รีเซ็ตรายชื่อ</button>
+      
+      <label style="display:inline-block;margin-top:4px;font-weight:700">
+          รายชื่อที่เหลืออยู่: <span id="nameCountDisplay">0</span>
+          <span class="setting-icon" id="listSettingIcon" title="เปิดหน้าตั้งค่า" role="button">⚙️</span>
+      </label>
+      <textarea id="nameList" placeholder="ใส่ชื่อ | บริษัท (หนึ่งรายการต่อหนึ่งบรรทัด)...">ชื่อ A | บริษัท A
+ชื่อ B | บริษัท B
+ชื่อ C | บริษัท C
+ชื่อ D | บริษัท D</textarea>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600">
+          <input type="checkbox" id="allowRepeats"> อนุญาตชื่อซ้ำ
+        </label>
+        <button id="showHistoryButton" style="background:#8b5cf6;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:800">ประวัติผู้ถูกสุ่ม (<span id="historyCount">0</span>)</button>
+      </div>
+      <div id="historyPanel" style="display:none;margin-top:10px;border-top:1px solid #e5e7eb;padding-top:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>ประวัติผู้ถูกสุ่ม</strong>
+          <button id="clearHistoryButton" style="background:#f59e0b;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-weight:700">ล้างประวัติ</button>
+        </div>
+        <ol id="historyList" style="margin-top:8px;max-height:160px;overflow:auto"></ol>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal" aria-modal="true" role="dialog">
+    <div class="modal-content">
+      <span class="close-button" data-close="settings" role="button" aria-label="ปิดหน้าต่างตั้งค่า">&times;</span>
+      <h2 style="margin-top:0">ตั้งค่าโปรแกรม</h2>
+
+      <div class="setting-group">
+        <label>ตำแหน่งกล่องสุ่ม</label>
+        <div class="alignment-controls" id="alignmentControls">
+          <button data-align="flex-start" id="alignLeft">Left</button>
+          <button data-align="center" id="alignCenter">Center</button>
+          <button data-align="flex-end" id="alignRight">Right</button>
+        </div>
+      </div>
+      
+      <div class="setting-group">
+        <label for="containerOpacityInput">ความโปร่งใสของกรอบหลัก (0.0 - 1.0)</label>
+        <div style="display:flex;align-items:center;margin-top:5px;gap:10px;">
+          <input type="range" id="containerOpacitySlider" value="0.5" min="0.0" max="1.0" step="0.05" style="width:70%;padding:0;height:40px;">
+          <input type="number" id="containerOpacityInput" value="0.5" min="0.0" max="1.0" step="0.05" style="width:88px;text-align:center;padding:10px;border-radius:10px">
+        </div>
+      </div>
+      
+      <div class="setting-group">
+        <label for="spinDurationInput">ตั้งค่าเวลาในการหมุน (1-10 วินาที)</label>
+        <div style="display:flex;align-items:center;margin-top:5px;">
+          <input type="number" id="spinDurationInput" value="3" min="1" max="10" style="width:88px;text-align:center;padding:10px;border-radius:10px">
+          <span style="margin-left:10px;">วินาที</span>
+        </div>
+        <small class="note">*ความเร็วการหมุนคงที่, เวลาเปลี่ยน = ระยะทางเปลี่ยน</small>
+      </div>
+
+      <div class="setting-group">
+        <label>ภาพพื้นหลัง (size : 1920x1080)</label>
+        <input type="file" id="bgImageFile" accept="image/*" style="display:none" multiple>
+        <button id="uploadBgButton" style="background:#111827;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:700">เลือกไฟล์รูปภาพ</button>
+        <button id="clearBgImage" style="background:#6b7280;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:700">ล้างรูปพื้นหลังทั้งหมด (ชั่วคราว)</button>
+        <small class="note">*บันทึกได้สูงสุด 15 ภาพ, ใช้ปุ่ม x/ป และ z/ผ สลับภาพพื้นหลัง, ลากเพื่อจัดเรียงลำดับ</small>
+        <label style="display:block;margin:14px 0 6px;font-weight:700;">ภาพพื้นหลัง</label>
+        <div id="thumbnailGallery"><p style="color:#9ca3af;text-align:center;width:100%;margin:10px 0;">ยังไม่มีรูปภาพ</p></div>
+        <div class="gallery-meta" id="galleryMeta">ภาพที่ 0 / ทั้งหมด 0</div>
+        <small class="note">*ลาก–วางไฟล์ภาพจากเดสก์ท็อปลงในกรอบนี้ได้</small>
+      </div>
+
+      <div class="color-settings-grid">
+        <div class="setting-group color-group">
+          <label for="slotBackgroundColor">สีพื้นหลังผลลัพธ์</label>
+          <input type="color" id="slotBackgroundColor" value="#111827">
+          <span id="slotBackgroundColorDisplay">#111827</span>
+        </div>
+        <div class="setting-group color-group">
+          <label for="slotTextColor">สีข้อความผลลัพธ์</label>
+          <input type="color" id="slotTextColor" value="#f9fafb">
+          <span id="slotTextColorDisplay">#F9FAFB</span>
+        </div>
+        <div class="setting-group color-group">
+          <label for="buttonColor">สีพื้นหลังปุ่ม DRAW</label>
+          <input type="color" id="buttonColor" value="#ff5a1f">
+          <span id="buttonColorDisplay">#FF5A1F</span>
+        </div>
+        <div class="setting-group color-group">
+          <label for="buttonTextColor">สีข้อความปุ่ม DRAW</label>
+          <input type="color" id="buttonTextColor" value="#ffffff">
+          <span id="buttonTextColorDisplay">#FFFFFF</span>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label for="bgColor">สีพื้นหลัง</label>
+        <input type="color" id="bgColor" value="#f3f4f6">
+        <span id="bgColorDisplay">#F3F4F6</span>
+      </div>
+
+      <div class="setting-group" style="border:none;padding:0;">
+        <button id="saveSettingsButton" style="background:#10b981;color:#fff;border:none;border-radius:12px;padding:14px 16px;font-weight:800;margin-top:8px;margin-bottom:6px">บันทึกการตั้งค่าทั้งหมด (Save)</button>
+        <button id="clearAllSettingsButton" style="background:#94a3b8;color:#fff;border:none;border-radius:12px;padding:12px 16px;font-weight:700">ล้างค่าที่บันทึกไว้ทั้งหมด (Reset เป็น Default)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ====== Refs / State ====== */
+const viewport=document.getElementById('viewport');
+const slotRoll=document.getElementById('slotRoll');
+const nameListTextarea=document.getElementById('nameList');
+const pickButton=document.getElementById('pickButton');
+const resetButton=document.getElementById('resetListButton');
+const settingsButton=document.getElementById('settingsButton');
+const listToggleButton=document.getElementById('listToggleButton');
+const fullscreenButton=document.getElementById('fullscreenButton');
+const forceLockButton=document.getElementById('forceLockButton');
+const fabStack=document.getElementById('fabStack');
+
+const listModal=document.getElementById('listModal');
+const settingsModal=document.getElementById('settingsModal');
+
+const nameCountDisplay=document.getElementById('nameCountDisplay');
+const listSettingIcon=document.getElementById('listSettingIcon'); 
+
+const bgColorInput=document.getElementById('bgColor');
+const bgColorDisplay=document.getElementById('bgColorDisplay');
+const buttonColorInput=document.getElementById('buttonColor');
+const buttonColorDisplay=document.getElementById('buttonColorDisplay');
+const spinDurationInput=document.getElementById('spinDurationInput');
+const slotTextColorInput=document.getElementById('slotTextColor');
+const slotTextColorDisplay=document.getElementById('slotTextColorDisplay');
+const buttonTextColorInput=document.getElementById('buttonTextColor');
+const buttonTextColorDisplay=document.getElementById('buttonTextColorDisplay');
+const slotBackgroundColorInput=document.getElementById('slotBackgroundColor');
+const slotBackgroundColorDisplay=document.getElementById('slotBackgroundColorDisplay');
+const saveSettingsButton=document.getElementById('saveSettingsButton');
+const clearAllSettingsButton=document.getElementById('clearAllSettingsButton');
+const alignmentControls=document.getElementById('alignmentControls');
+const bgImageFileInput=document.getElementById('bgImageFile');
+const uploadBgButton=document.getElementById('uploadBgButton');
+const clearBgImageButton=document.getElementById('clearBgImage');
+const thumbnailGallery=document.getElementById('thumbnailGallery');
+const galleryMeta=document.getElementById('galleryMeta');
+const allowRepeatsCheckbox=document.getElementById('allowRepeats');
+const showHistoryButton=document.getElementById('showHistoryButton');
+const historyPanel=document.getElementById('historyPanel');
+const historyList=document.getElementById('historyList');
+const clearHistoryButton=document.getElementById('clearHistoryButton');
+const historyCount=document.getElementById('historyCount');
+
+const containerOpacitySlider=document.getElementById('containerOpacitySlider');
+const containerOpacityInput=document.getElementById('containerOpacityInput');
+let containerOpacity=0.5;
+
+
+/* ===== Force Lock state ===== */
+let lockedMap = new Map();
+let lockedQueue = [];
+function getLockedResultsText(){ return localStorage.getItem('pickerLockedResults') || ''; }
+function isForceLockEnabled(){ return localStorage.getItem('pickerForceLockMode') === '1'; }
+
+/* ===== Names ===== */
+let backgroundImages=[]; let currentBgIndex=-1; const MAX_BG_IMAGES=15;
+let names=[];
+const BASE_SPEED_ITEMS_PER_SEC=5; let spinTimeInSeconds=3; let currentSpinDurationMS=spinTimeInSeconds*1000;
+let allowRepeats=false; let winnerHistory=[];
+let initialNameSnapshot='';
+
+let lastPageDownTime = 0;
+const DOUBLE_CLICK_TIME_MS = 400;
+
+/* ===== Helpers ===== */
+function parseEntry(line){
+  const t=line.trim(); if(!t) return null;
+  let person='', company=''; const seps=['|','-','\t',','];
+  for(const s of seps){ if(t.includes(s)){ const [a,...rest]=t.split(s); person=a.trim(); company=rest.join(s).trim(); break; } }
+  if(!person){ person=t; company=''; }
+  return { raw:t, person, company };
+}
+
+/* ===== Locked Results Parsing ===== */
+function parseLockedResults(){
+  lockedMap.clear(); lockedQueue = [];
+  const raw = getLockedResultsText().split('\n').map(l=>l.trim()).filter(Boolean);
+  raw.forEach(line=>{
+    const parts = line.split('|').map(p=>p.trim());
+    const nameKey = parts[0] || '';
+    const prize = parts.slice(1).join(' | ') || '';
+    if(nameKey){ lockedMap.set(nameKey, prize); lockedQueue.push({name:nameKey, prize}); }
+  });
+}
+function applyForceLockSettings(text, enabled){
+  localStorage.setItem('pickerLockedResults', text || '');
+  localStorage.setItem('pickerForceLockMode', enabled ? '1' : '0');
+  parseLockedResults(); viewport.focus();
+}
+window.applyForceLockSettings = applyForceLockSettings;
+
+/* ===== Slot DOM ===== */
+function parseNameList(updateDisplay=true){
+  names = nameListTextarea.value.split('\n').map(parseEntry).filter(Boolean).map(n=>({...n}));
+  nameCountDisplay.textContent=names.length;
+  localStorage.setItem('pickerNameList', nameListTextarea.value);
+  pickButton.disabled=names.length===0;
+  resetButton.disabled = (initialNameSnapshot.trim().length === 0);
+  if(updateDisplay) updateSlotRoll(null, 15);
+}
+function makeSlotItem(entry){
+  const el=document.createElement('div'); el.className='slot-item';
+  const top=document.createElement('div'); top.className='slot-name'; top.textContent = entry?.person ?? entry ?? '';
+  const bottom=document.createElement('div'); bottom.className='slot-company';
+  if(entry?.prize){ bottom.textContent = entry.prize + (entry.company ? (' — '+entry.company) : ''); bottom.style.opacity = '.98'; }
+  else{ bottom.textContent = entry?.company ?? ''; if(!bottom.textContent) bottom.style.visibility='hidden'; }
+  el.append(top,bottom); return el;
+}
+// **MODIFIED**: เพิ่มพารามิเตอร์ forceWelcome เพื่อบังคับแสดงข้อความต้อนรับ
+function updateSlotRoll(winningEntry=null, itemsBeforeWinner=15, forceWelcome=false){
+  slotRoll.innerHTML=''; const frag=document.createDocumentFragment();
+  const pool = names.length ? names : [{person:'...ว่างเปล่า...',company:''}];
+  
+  // MODIFIED: Check if it's the first run (no winner, roll content is empty) หรือถูกบังคับให้แสดง
+  if (forceWelcome || (!winningEntry && slotRoll.innerHTML === '')) {
+    // MODIFIED: Initial text before the first roll, removed the company text.
+    frag.appendChild(makeSlotItem({person:'Ready to Win a Prize?', company:''}));
+  } else {
+    for(let i=0;i<itemsBeforeWinner;i++){ const t=pool[Math.floor(Math.random()*pool.length)]; frag.appendChild(makeSlotItem(t)); }
+    frag.appendChild(makeSlotItem(winningEntry || pool[0]));
+    for(let i=0;i<itemsBeforeWinner;i++){ const t=pool[Math.floor(Math.random()*pool.length)]; frag.appendChild(makeSlotItem(t)); }
+  }
+  
+  slotRoll.appendChild(frag);
+  slotRoll.style.transition='none'; slotRoll.style.transform='translateY(0)'; void slotRoll.offsetWidth;
+}
+
+/* ===== Pick logic ===== */
+function findLockedMatchInNames(){
+  for(const item of lockedQueue){
+    const found = names.find(n => n.person === item.name || n.raw === item.name);
+    if(found) return {mapEntry: item, nameEntry: found};
+  }
+  for(const item of lockedQueue){
+    const found = names.find(n => n.person.toLowerCase() === item.name.toLowerCase() || n.raw.toLowerCase() === item.name.toLowerCase());
+    if(found) return {mapEntry: item, nameEntry: found};
+  }
+  return null;
+}
+async function spinSlot(){
+  if(names.length===0){
+    slotRoll.style.transition='none'; slotRoll.style.transform='translateY(0)';
+    updateSlotRoll({person:'❌ ชื่อหมดแล้ว ❌',company:''}); return;
+  }
+  const forceMode = isForceLockEnabled(); parseLockedResults();
+
+  const originalText=pickButton.textContent;
+  pickButton.disabled=true; pickButton.classList.add('loading');
+  pickButton.innerHTML='<span class="spinner-icon">⟳</span> Spinning...';
+
+  let winnerEntry = null;
+  if(forceMode){
+    const found = findLockedMatchInNames();
+    if(found){
+      winnerEntry = {...found.nameEntry};
+      const winnerPrize = found.mapEntry.prize || null;
+      if(winnerPrize) winnerEntry.prize = winnerPrize;
+      const idx = lockedQueue.findIndex(it => it.name === found.mapEntry.name && it.prize === found.mapEntry.prize);
+      if(idx !== -1) lockedQueue.splice(idx,1);
+    }
+  }
+  if(!winnerEntry){
+    const winnerIndex=Math.floor(Math.random()*names.length);
+    winnerEntry = {...names[winnerIndex]};
+    const possiblePrize = lockedMap.get(winnerEntry.person) || lockedMap.get(winnerEntry.raw) || null;
+    if(possiblePrize) winnerEntry.prize = possiblePrize;
+  }
+
+  const dynamicRollItems=Math.max(5, Math.round(BASE_SPEED_ITEMS_PER_SEC*spinTimeInSeconds));
+  updateSlotRoll(winnerEntry, dynamicRollItems);
+
+  const targetIndex=dynamicRollItems;
+  const firstSlotItem=slotRoll.querySelector('.slot-item');
+  const responsiveSlotHeight=firstSlotItem?firstSlotItem.clientHeight:150;
+  const targetPosition=targetIndex*responsiveSlotHeight;
+
+  slotRoll.style.transition=`transform ${currentSpinDurationMS/1000}s cubic-bezier(0.2,0.8,0.2,1)`;
+  slotRoll.style.transform=`translateY(-${targetPosition}px)`;
+  await new Promise(r=>setTimeout(r, currentSpinDurationMS));
+
+  const displayName = `${winnerEntry.person}${winnerEntry.company?(' — '+winnerEntry.company):''}`;
+  const historyItem = {name: displayName + (winnerEntry.prize ? (' — '+winnerEntry.prize) : ''), time:new Date().toISOString()};
+  winnerHistory.push(historyItem);
+  localStorage.setItem('pickerWinnerHistory', JSON.stringify(winnerHistory));
+  renderHistory();
+
+  if(!allowRepeats){
+    const removeIndex=names.findIndex(n=>n.raw===winnerEntry.raw && n.person===winnerEntry.person);
+    if(removeIndex>-1) names.splice(removeIndex,1);
+    nameListTextarea.value=names.map(n=>n.raw).join('\n');
+    parseNameList(false);
+  }else{
+    nameCountDisplay.textContent=names.length;
+  }
+
+  pickButton.classList.remove('loading'); pickButton.textContent=originalText;
+  if(names.length===0 && !allowRepeats){
+    slotRoll.style.transition='none'; slotRoll.style.transform='translateY(0)';
+    updateSlotRoll({person:'✅ สุ่มครบแล้ว ✅',company:''});
+  }else{
+    pickButton.disabled=false;
+  }
+}
+
+/* ===== Fullscreen ===== */
+function isBrowserFullscreen(){const tol=2;const fsH=Math.abs(window.innerHeight - screen.height) < tol;const fsW=Math.abs(window.innerWidth  - screen.width)  < tol;return fsH && fsW;}
+function toggleFloatingButtons(hide){fabStack?.classList.toggle('hidden', !!hide);} 
+function syncFullscreenUI(){const apiFs=!!document.fullscreenElement;const browserFs=isBrowserFullscreen();const hide = apiFs || browserFs;toggleFloatingButtons(hide);fullscreenButton.textContent = hide ? '⛞' : '⛶';}
+document.addEventListener('fullscreenchange', syncFullscreenUI); window.addEventListener('resize', syncFullscreenUI);
+
+/* ===== Backgrounds ===== */
+function applyBackgroundImage(){thumbnailGallery.querySelectorAll('.thumbnail-item').forEach(i=>i.classList.remove('active'));if(currentBgIndex>=0 && currentBgIndex<backgroundImages.length){document.documentElement.style.setProperty('--bg-image', `url('${backgroundImages[currentBgIndex]}')`);}else{document.documentElement.style.setProperty('--bg-image','none');}renderThumbnailGallery(); updateGalleryMeta();}
+function nextBackgroundImage(){ if(!backgroundImages.length){currentBgIndex=-1;applyBackgroundImage();return;} currentBgIndex=(currentBgIndex+1)%backgroundImages.length; applyBackgroundImage();}
+function prevBackgroundImage(){ if(!backgroundImages.length){currentBgIndex=-1;applyBackgroundImage();return;} currentBgIndex=(currentBgIndex-1+backgroundImages.length)%backgroundImages.length; applyBackgroundImage();}
+function clearBackgroundImage(){ if(!confirm('ล้างรูปพื้นหลังทั้งหมดที่โหลดไว้ชั่วคราว? (ต้องกด "บันทึกการตั้งค่า" เพื่อให้ถาวร)')) return; currentBgIndex=-1; document.documentElement.style.setProperty('--bg-image','none'); backgroundImages=[]; renderThumbnailGallery(); updateGalleryMeta(); alert('ล้างรูปพื้นหลังในเซสชันนี้แล้ว กรุณากด "บันทึกการตั้งค่าทั้งหมด" เพื่อให้ถาวร');}
+function deleteBackgroundImage(indexToDelete){ if(!confirm(`ลบภาพพื้นหลังหมายเลข ${indexToDelete+1}? (กด Save เพื่อให้ถาวร)`)) return; const activeContent=(currentBgIndex>=0&&currentBgIndex<backgroundImages.length)?backgroundImages[currentBgIndex]:null; backgroundImages.splice(indexToDelete,1); if(!backgroundImages.length){currentBgIndex=-1;} else if(activeContent){const newIdx=backgroundImages.indexOf(activeContent); currentBgIndex = (newIdx===-1)? Math.min(indexToDelete, backgroundImages.length-1) : newIdx;} else currentBgIndex=-1; applyBackgroundImage();}
+function renderThumbnailGallery(){
+  thumbnailGallery.innerHTML=''; 
+  if(!backgroundImages.length){
+    thumbnailGallery.innerHTML='<p style="color:#9ca3af;text-align:center;width:100%;margin:10px 0;">ยังไม่มีรูปภาพ</p>'; 
+    updateGalleryMeta(); 
+    return;
+  } 
+  
+  backgroundImages.forEach((dataUrl,index)=>{
+    const item=document.createElement('div'); 
+    item.className='thumbnail-item'; 
+    item.dataset.index=String(index); 
+    if(index===currentBgIndex) item.classList.add('active'); 
+    
+    const img=document.createElement('img'); 
+    img.src=dataUrl; 
+    img.alt=`Background ${index+1}`; 
+    img.draggable="false"; 
+    
+    const num=document.createElement('span'); 
+    num.className='thumbnail-number'; 
+    num.textContent=index+1; 
+    
+    const del=document.createElement('button'); 
+    del.className='thumbnail-delete-button'; 
+    del.textContent='x'; 
+    del.title='ลบภาพนี้'; 
+    
+    const handle=document.createElement('span'); 
+    handle.className='drag-handle'; 
+    handle.textContent='⋮⋮'; 
+    
+    if(index===currentBgIndex){ 
+      const badge=document.createElement('span'); 
+      badge.className='current-badge'; 
+      badge.textContent='กำลังใช้'; 
+      item.appendChild(badge); 
+    }
+    
+    // **FIXED**: ป้องกันไม่ให้คลิกปุ่มกากบาทไปเรียก Event อื่นของ .thumbnail-item
+    del.addEventListener('click', (e) => {
+        e.stopPropagation(); // หยุด Event ไม่ให้ไปยัง item แม่
+        deleteBackgroundImage(index);
+    });
+
+    item.addEventListener('click',e=>{ 
+      // ตรวจสอบว่าไม่ได้คลิกที่ปุ่มกากบาท (ซึ่งตอนนี้ถูก stopPropagation ป้องกันแล้ว)
+      if((e.target).classList?.contains('thumbnail-delete-button')) return; 
+      currentBgIndex=index; 
+      applyBackgroundImage();
+    });
+    
+    const startEl=(ev)=> startDrag(ev,item,index);
+    // ใช้ pointerdown สำหรับการลาก (Drag Handle)
+    handle.addEventListener('pointerdown', startEl, {passive:false});
+    // ใช้ pointerdown สำหรับการลาก (Click บน item)
+    item.addEventListener('pointerdown', startEl, {passive:false});
+    
+    item.append(img,num,del,handle);
+    thumbnailGallery.appendChild(item);
+  });
+  const activeItem=thumbnailGallery.querySelector('.thumbnail-item.active');
+  activeItem?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});
+}
+function updateGalleryMeta(){const total=backgroundImages.length; const pos=(currentBgIndex>=0? currentBgIndex+1 : 0); galleryMeta.textContent=`ภาพที่ ${pos} / ทั้งหมด ${total}`;}
+let dragging=null, placeholder=null, insertLine=null;
+function startDrag(ev,item,index){
+  // **FIXED**: ป้องกันการลากที่เป็นค่าดีฟอลต์
+  if(ev.target.classList.contains('thumbnail-delete-button')) return; // ห้ามเริ่ม drag หากคลิกที่ปุ่มลบ
+
+  if(dragging?.ghost) dragging.ghost.remove();
+  
+  if(ev.isPrimary===false) return; 
+  ev.preventDefault(); // **FIXED**: ป้องกันการ Drag default ของเบราว์เซอร์
+  
+  const rect=item.getBoundingClientRect(); 
+  dragging={el:item,index,offsetX:ev.clientX-rect.left,offsetY:ev.clientY-rect.top,width:rect.width,height:rect.height}; 
+  const ghost=item.cloneNode(true); 
+  ghost.classList.add('dragging-ghost'); 
+  ghost.style.width=rect.width+'px'; 
+  ghost.style.height=rect.height+'px'; 
+  ghost.style.left=rect.left+'px'; 
+  ghost.style.top=rect.top+'px'; 
+  document.body.appendChild(ghost); 
+  dragging.ghost=ghost; 
+  
+  placeholder=document.createElement('div'); 
+  placeholder.className='thumb-placeholder'; 
+  placeholder.style.width=rect.width+'px'; 
+  placeholder.style.height=rect.height+'px'; 
+  item.replaceWith(placeholder); 
+  
+  insertLine=document.createElement('div'); 
+  insertLine.className='insert-line'; 
+  thumbnailGallery.appendChild(insertLine); 
+  
+  window.addEventListener('pointermove', onDragMove, {passive:false}); 
+  window.addEventListener('pointerup', onDragEnd, {once:true});
+}
+function onDragMove(ev){if(!dragging) return; ev.preventDefault(); const x=ev.clientX-dragging.offsetX, y=ev.clientY-dragging.offsetY; dragging.ghost.style.left=x+'px'; dragging.ghost.style.top=y+'px'; const idx=computeInsertionIndex(ev.clientX, ev.clientY); placePlaceholder(idx);} 
+function onDragEnd(){if(!dragging) return; const children=Array.from(thumbnailGallery.children).filter(n=>n!==insertLine); const newIndex=children.indexOf(placeholder); const [moved]=backgroundImages.splice(dragging.index,1); const finalIndex=Math.max(0, Math.min(newIndex, backgroundImages.length)); backgroundImages.splice(finalIndex,0,moved); if(currentBgIndex>-1){ const content=moved; currentBgIndex=backgroundImages.indexOf(content); } dragging.ghost.remove(); placeholder.replaceWith(dragging.el); insertLine.remove(); dragging=null; placeholder=null; insertLine=null; renderThumbnailGallery(); applyBackgroundImage();}
+function computeInsertionIndex(x,y){const items=[...thumbnailGallery.querySelectorAll('.thumbnail-item,.thumb-placeholder')]; if(!items.length) return 0; let closestIdx=items.length,closestDist=Infinity; items.forEach((el,idx)=>{const r=el.getBoundingClientRect(); const cx=r.left+r.width/2, cy=r.top+r.height/2; const d=Math.hypot(cx-x, cy-y); if(d<closestDist){closestDist=d; closestIdx=idx;}}); return closestIdx;}
+function placePlaceholder(idx){if(!placeholder) return; const items=[...thumbnailGallery.querySelectorAll('.thumbnail-item,.thumb-placeholder')]; if(idx>=items.length) thumbnailGallery.appendChild(placeholder); else thumbnailGallery.insertBefore(placeholder, items[idx]);}
+
+/* Drag & Drop images */
+thumbnailGallery.addEventListener('dragover', e=>{ e.preventDefault(); thumbnailGallery.classList.add('dragover'); });
+thumbnailGallery.addEventListener('dragleave', ()=> thumbnailGallery.classList.remove('dragover'));
+thumbnailGallery.addEventListener('drop', async e=>{
+  e.preventDefault(); thumbnailGallery.classList.remove('dragover');
+  const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));
+  if(files.length===0) return;
+  const space=MAX_BG_IMAGES-backgroundImages.length;
+  const toProcess=files.slice(0, space);
+  if(toProcess.length<files.length) alert(`เพิ่มได้อีกสูงสุด ${space} ภาพ`);
+  const read=(file)=>new Promise(res=>{const r=new FileReader(); r.onload=ev=>res(ev.target.result); r.readAsDataURL(file);});
+  try{
+    const urls=await Promise.all(toProcess.map(read));
+    backgroundImages.push(...urls);
+    currentBgIndex=backgroundImages.length-1; applyBackgroundImage();
+    alert(`✅ เพิ่มภาพแล้ว ${urls.length} ภาพ (รวม ${backgroundImages.length}/${MAX_BG_IMAGES}) — กด "บันทึกการตั้งค่าทั้งหมด" เพื่อให้ถาวร`); 
+  }catch(err){ console.error(err); alert('เกิดข้อผิดพลาดในการอ่านไฟล์'); }
+});
+
+/* ===== Save / Load / History / Events ===== */
+function saveSettings(){
+  const st=getComputedStyle(document.documentElement);
+  localStorage.setItem('pickerBgColor', st.getPropertyValue('--background-color').trim());
+  localStorage.setItem('pickerButtonColor', st.getPropertyValue('--button-color').trim());
+  localStorage.setItem('pickerSlotTextColor', st.getPropertyValue('--slot-text-color').trim());
+  localStorage.setItem('pickerButtonTextColor', st.getPropertyValue('--button-text-color').trim());
+  localStorage.setItem('pickerSlotBgColor', st.getPropertyValue('--slot-background-color').trim());
+  localStorage.setItem('pickerSpinDuration', spinTimeInSeconds);
+  localStorage.setItem('pickerBgImageIndex', currentBgIndex);
+  localStorage.setItem('pickerBgImages', JSON.stringify(backgroundImages));
+  localStorage.setItem('pickerNameList', nameListTextarea.value);
+  localStorage.setItem('pickerAllowRepeats', allowRepeats ? '1' : '0');
+  localStorage.setItem('pickerWinnerHistory', JSON.stringify(winnerHistory));
+  localStorage.setItem('pickerContainerOpacity', containerOpacity);
+  alert('✅ บันทึกการตั้งค่าทั้งหมดเรียบร้อยแล้ว');
+  settingsModal.style.display='none'; viewport.focus();
+}
+function clearAllSettings(){
+  if(!confirm('ล้างการตั้งค่าทั้งหมดและกลับค่าเริ่มต้นใช่หรือไม่?')) return;
+  ['pickerBgColor','pickerButtonColor','pickerSlotTextColor','pickerButtonTextColor','pickerSlotBgColor','pickerBgImages','pickerBgImageIndex','pickerSpinDuration','pickerVerticalAlignment','pickerNameList','pickerAllowRepeats','pickerWinnerHistory','pickerLockedResults','pickerForceLockMode', 'pickerContainerOpacity'].forEach(k=>localStorage.removeItem(k));
+  alert('☑️ ล้างค่าเรียบร้อย ระบบจะโหลดหน้าใหม่'); window.location.reload();
+}
+function renderHistory(){
+  historyList.innerHTML='';
+  if(!winnerHistory.length){ historyList.innerHTML='<li style="color:#6b7280">ยังไม่มีประวัติ</li>'; }
+  else{
+    winnerHistory.slice().reverse().forEach(item=>{
+      const li=document.createElement('li');
+      const dt=new Date(item.time);
+      li.textContent=`${item.name} — ${dt.toLocaleString()}`;
+      historyList.appendChild(li);
+    });
+  }
+  historyCount.textContent=winnerHistory.length;
+}
+
+/* ===== Force Lock POPUP ===== */
+function openForceLockPopup(){
+  const w = 620, h = 720;
+  const y = Math.max(0, (window.outerHeight - h)/2 + window.screenY);
+  const x = Math.max(0, (window.outerWidth  - w)/2 + window.screenX);
+  const features = `width=${w},height=${h},left=${x},top=${y},resizable=yes,scrollbars=yes`;
+
+  const win = window.open('', 'ForceLockWinners', features);
+  if (!win || win.closed){ alert('⚠️ โปรดอนุญาตป๊อปอัปของเบราว์เซอร์เพื่อใช้ Force Lock'); return; }
+
+  const html = `<!DOCTYPE html>
+  <html lang="th"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Force Lock Winners</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:Prompt,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#f6f7f9;color:#111827;letter-spacing:.2px}
+    header{position:sticky;top:0;background:#fff;padding:14px 18px;border-bottom:1px solid #e5e7eb}
+    main{padding:16px 18px}
+    .row{display:flex;align-items:center;gap:10px;margin:10px 0}
+    input[type=checkbox]{transform:scale(1.2)}
+    textarea{width:100%;min-height:300px;padding:12px;border:1px solid #e5e7eb;border-radius:12px;box-sizing:border-box;font:inherit;background:#fff}
+    small{color:#6b7280}
+    .actions{display:flex;gap:10px;margin-top:14px}
+    button{flex:1 1 auto;padding:12px 14px;border:none;border-radius:12px;color:#fff;font-weight:800;cursor:pointer}
+    .save{background:#10b981}.close{background:#334155}
+    .pill{display:inline-block;background:#e5e7eb;color:#111827;padding:4px 10px;border-radius:999px;font-weight:800;font-size:.9rem;margin-left:8px}
+  </style></head>
+  <body>
+    <header><h2 style="margin:0;font-weight:800">Force Lock Winners <span id="status" class="pill">OFF</span></h2></header>
+    <main>
+      <label class="row"><input id="enable" type="checkbox"/> เปิดใช้งาน Force Lock Winners</label>
+      <small>เมื่อติ๊กและกด <strong>Save</strong> ระบบจะล็อคผลสำหรับการสุ่ม <strong>ครั้งถัดไป</strong> (ตามลำดับบนลงล่าง)</small>
+      <div class="row" style="margin-top:12px;align-items:flex-start;flex-direction:column">
+        <label style="font-weight:800">รายการล็อคผล (รูปแบบ: <code>ชื่อผู้ถูกสุ่ม | ชื่อผลลัพธ์</code>)</label>
+        <textarea id="locked" placeholder="เช่น:\nสมชาย | ตุ๊กตา A\nมาลี | Gift Box B"></textarea>
+        <small>หนึ่งบรรทัดต่อหนึ่งรายการ — ชื่อทางซ้ายต้องตรงกับรายชื่อที่โหลดอยู่</small>
+      </div>
+      <div class="actions"><button class="save" id="saveBtn">Save</button><button class="close" id="closeBtn">Close</button></div>
+    <script>
+      const statusEl=document.getElementById('status'), enable=document.getElementById('enable'), locked=document.getElementById('locked');
+      function sync(){
+        try{
+          const on=(window.opener&&!window.opener.closed&&window.opener.localStorage.getItem('pickerForceLockMode')==='1');
+          const txt=(window.opener&&!window.opener.closed&&window.opener.localStorage.getItem('pickerLockedResults'))||'';
+          enable.checked=!!on; locked.value=txt; statusEl.textContent=on?'ON':'OFF';
+          statusEl.style.background=on?'#bbf7d0':'#e5e7eb'; statusEl.style.color=on?'#166534':'#111827';
+        }catch(e){}
+      }
+      document.getElementById('saveBtn').addEventListener('click',function(){
+        if(window.opener&&!window.opener.closed&&typeof window.opener.applyForceLockSettings==='function'){
+          window.opener.applyForceLockSettings(locked.value, enable.checked); sync();
+        }else{ alert('ไม่พบหน้าหลัก กรุณาเปิดหน้าสุ่มแล้วลองใหม่'); }
+      });
+      document.getElementById('closeBtn').addEventListener('click',()=>window.close());
+      window.addEventListener('storage', sync); sync();
+    <\/script></body></html>`;
+  win.document.open(); win.document.write(html); win.document.close();
+}
+
+/* ===== UI open/close ===== */
+settingsButton.addEventListener('click', (e)=>{ e.stopPropagation(); settingsModal.style.display='flex'; });
+document.querySelectorAll('.close-button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const type=btn.getAttribute('data-close');
+    if(type==='settings') settingsModal.style.display='none';
+    if(type==='list')     listModal.style.display='none';
+  });
+});
+window.addEventListener('click', (e)=>{
+  if (e.target===settingsModal) settingsModal.style.display='none';
+  if (e.target===listModal)     listModal.style.display='none';
+});
+listToggleButton.addEventListener('click', e=>{ e.stopPropagation(); listModal.style.display='flex'; });
+// **NEW EVENT**: คลิกที่ไอคอน Setting ใน List Modal เพื่อเปิดหน้าตั้งค่า
+listSettingIcon.addEventListener('click', e=>{
+    e.stopPropagation(); 
+    listModal.style.display='none';
+    settingsModal.style.display='flex';
+});
+
+
+/* Buttons & shortcuts */
+pickButton.addEventListener('click', spinSlot);
+fullscreenButton.addEventListener('click', ()=>{ if(!document.fullscreenElement){ viewport.requestFullscreen?.(); } else{ document.exitFullscreen?.(); } });
+showHistoryButton.addEventListener('click', ()=>{ historyPanel.style.display = historyPanel.style.display==='none' ? 'block':'none'; });
+clearHistoryButton.addEventListener('click', ()=>{ if(!confirm('ล้างประวัติผู้ถูกสุ่มทั้งหมด?')) return; winnerHistory=[]; localStorage.setItem('pickerWinnerHistory','[]'); renderHistory(); });
+forceLockButton.addEventListener('click', openForceLockPopup);
+
+/* Reset names */
+resetButton.addEventListener('click', () => {
+  if (!initialNameSnapshot) return;
+  if (!confirm('รีเซ็ตรายชื่อให้เป็นค่าเริ่มต้นตอนเปิดหน้านี้ใช่หรือไม่?')) return;
+  nameListTextarea.value = initialNameSnapshot;
+  parseNameList(true);
+  viewport.focus();
+});
+
+nameListTextarea.addEventListener('input', ()=>parseNameList(true));
+allowRepeatsCheckbox.addEventListener('change', ()=>{ allowRepeats=allowRepeatsCheckbox.checked; localStorage.setItem('pickerAllowRepeats', allowRepeats?'1':'0'); });
+
+/* Keyboard shortcuts - MODIFIED: เพิ่ม PageDown และ ArrowRight เพื่อรองรับปุ่ม Next ของ Pointer */
+document.addEventListener('keydown',(e)=>{
+  // **NEW**: ป้องกัน Ctrl/Cmd + A (Select All)
+  if((e.key==='a' || e.key==='A') && (e.ctrlKey || e.metaKey)){
+    e.preventDefault();
+    return;
+  }
+  
+  if((settingsModal.style.display!=='flex') && (listModal.style.display!=='flex') && !nameListTextarea.matches(':focus')){
+    
+    // --- สุ่ม (Spin) ด้วย Space / PageUp / PageDown / ArrowRight (ปุ่ม Next ของ Pointer) ---
+    if((e.key===' ' || e.key==='PageUp' || e.key==='PageDown' || e.key==='ArrowRight') && !pickButton.disabled){
+        e.preventDefault(); 
+        spinSlot();
+    }
+    
+    // **NEW**: แสดงข้อความต้อนรับ / รีเซ็ตหน้าจอ (Welcome/Reset Display) ด้วย r หรือ พ
+    else if(e.key==='r' || e.key==='R' || e.key==='พ'){
+        e.preventDefault();
+        updateSlotRoll(null, 15, true);
+    }
+    
+    // --- สลับภาพพื้นหลังถัดไป (Next BG) ด้วย x หรือ ป ---
+    else if(e.key==='x' || e.key==='X' || e.key==='ป'){e.preventDefault(); nextBackgroundImage();}
+
+    // --- สลับภาพพื้นหลังก่อนหน้า (Previous BG) ด้วย z หรือ ผ ---
+    else if(e.key==='z' || e.key==='Z' || e.key==='ผ'){
+      e.preventDefault();
+      prevBackgroundImage(); 
+    }
+    
+    // --- ปุ่มลัดอื่น ๆ (คงเดิม) ---
+    else if(e.key==='s' || e.key==='S'){e.preventDefault(); settingsModal.style.display='flex';}
+    else if(e.key==='l' || e.key==='L'){e.preventDefault(); listModal.style.display = (listModal.style.display==='flex' ? 'none' : 'flex');}
+    else if(e.key==='f' || e.key==='F'){e.preventDefault(); openForceLockPopup();}
+  }
+});
+/* END Keyboard shortcuts - MODIFIED */
+
+// **NEW**: ป้องกันการเริ่มลาก (Drag Start) ขององค์ประกอบทั่วไป (เช่น รูปภาพ)
+document.addEventListener('dragstart', function(e) {
+    // อนุญาตให้ลากได้เฉพาะในส่วนของ Gallery Thumbnail ที่มีการจัดการ Drag & Drop เอง
+    if (!e.target.closest('#thumbnailGallery')) {
+        e.preventDefault();
+    }
+});
+
+
+slotTextColorInput.addEventListener('input',()=>{const c=slotTextColorInput.value;document.documentElement.style.setProperty('--slot-text-color',c);slotTextColorDisplay.textContent=c.toUpperCase();});
+buttonTextColorInput.addEventListener('input',()=>{const c=buttonTextColorInput.value;document.documentElement.style.setProperty('--button-text-color',c);buttonTextColorDisplay.textContent=c.toUpperCase();});
+slotBackgroundColorInput.addEventListener('input',()=>{const c=slotBackgroundColorInput.value;document.documentElement.style.setProperty('--slot-background-color',c);slotBackgroundColorDisplay.textContent=c.toUpperCase();});
+bgColorInput.addEventListener('input',()=>{const c=bgColorInput.value;document.documentElement.style.setProperty('--background-color',c);bgColorDisplay.textContent=c.toUpperCase();});
+buttonColorInput.addEventListener('input',()=>{const c=buttonColorInput.value;document.documentElement.style.setProperty('--button-color',c);buttonColorDisplay.textContent=c.toUpperCase();});
+saveSettingsButton.addEventListener('click', saveSettings);
+clearAllSettingsButton.addEventListener('click', clearAllSettings);
+spinDurationInput.addEventListener('change',()=>{const t=parseInt(spinDurationInput.value); if(!isNaN(t)&&t>=1&&t<=10){spinTimeInSeconds=t;currentSpinDurationMS=t*1000;} else{spinTimeInSeconds=3;currentSpinDurationMS=3000;spinDurationInput.value=3;} localStorage.setItem('pickerSpinDuration', spinTimeInSeconds);});
+alignmentControls.querySelectorAll('button').forEach(b=> b.addEventListener('click',()=>{document.documentElement.style.setProperty('--container-vertical-alignment', b.getAttribute('data-align')); localStorage.setItem('pickerVerticalAlignment', b.getAttribute('data-align')); alignmentControls.querySelectorAll('button').forEach(btn=>btn.classList.toggle('active', btn.getAttribute('data-align')===b.getAttribute('data-align')));} ));
+uploadBgButton.addEventListener('click',()=>{ if(backgroundImages.length>=MAX_BG_IMAGES){alert(`ได้สูงสุด ${MAX_BG_IMAGES} ภาพ`);return;} bgImageFileInput.click(); });
+bgImageFileInput.addEventListener('change',async(e)=>{const files=Array.from(e.target.files); let toProcess=files.slice(0, MAX_BG_IMAGES-backgroundImages.length); if(toProcess.length===0 && files.length>0){alert(`ครบ ${MAX_BG_IMAGES} ภาพแล้ว`);return;} toProcess.sort((a,b)=>a.name.localeCompare(b.name, undefined, {numeric:true, sensitivity:'base'})); const read=(file)=>new Promise(res=>{const r=new FileReader(); r.onload=ev=>res(ev.target.result); r.readAsDataURL(file);}); try{ const urls=await Promise.all(toProcess.map(read)); backgroundImages.push(...urls); currentBgIndex=backgroundImages.length-1; applyBackgroundImage(); alert(`✅ เพิ่มภาพแล้ว ${urls.length} ภาพ (รวม ${backgroundImages.length}/${MAX_BG_IMAGES}) — กรุณา "บันทึกการตั้งค่าทั้งหมด" เพื่อให้ถาวร`);}catch(err){console.error(err);alert('เกิดข้อผิดพลาดในการอ่านไฟล์');} bgImageFileInput.value='';});
+clearBgImageButton.addEventListener('click', clearBackgroundImage);
+
+/* Container Opacity Controls */
+function updateContainerOpacity(value){
+  containerOpacity = Math.min(1.0, Math.max(0.0, parseFloat(value) || 0));
+  const cssValue = containerOpacity.toFixed(2);
+  document.documentElement.style.setProperty('--container-opacity', cssValue);
+  containerOpacityInput.value = cssValue;
+  containerOpacitySlider.value = cssValue;
+
+  // ** โค้ดที่เพิ่ม/แก้ไข: ลบเงาและเส้นขอบเมื่อ Opacity เป็น 0 **
+  if (containerOpacity === 0) {
+    document.documentElement.style.setProperty('--container-box-shadow', 'none');
+    document.documentElement.style.setProperty('--container-border-radius', '0');
+  } else {
+    // กำหนดค่าเริ่มต้นกลับไปเมื่อ Opacity มากกว่า 0
+    document.documentElement.style.setProperty('--container-box-shadow', '0 10px 30px rgba(0,0,0,.06)');
+    document.documentElement.style.setProperty('--container-border-radius', '18px');
+  }
+  // ** สิ้นสุดโค้ดที่เพิ่ม/แก้ไข **
+}
+containerOpacitySlider.addEventListener('input', (e) => updateContainerOpacity(e.target.value));
+containerOpacityInput.addEventListener('change', (e) => updateContainerOpacity(e.target.value));
+
+/* ===== Initial Load ===== */
+(function initialLoad(){
+  const st=getComputedStyle(document.documentElement);
+  const defaults={bg:st.getPropertyValue('--background-color').trim(), btn:st.getPropertyValue('--button-color').trim(), slotText:st.getPropertyValue('--slot-text-color').trim(), btnText:st.getPropertyValue('--button-text-color').trim(), slotBg:st.getPropertyValue('--slot-background-color').trim()};
+  document.documentElement.style.setProperty('--background-color', localStorage.getItem('pickerBgColor')||defaults.bg);
+  document.documentElement.style.setProperty('--button-color', localStorage.getItem('pickerButtonColor')||defaults.btn);
+  document.documentElement.style.setProperty('--slot-text-color', localStorage.getItem('pickerSlotTextColor')||defaults.slotText);
+  document.documentElement.style.setProperty('--button-text-color', localStorage.getItem('pickerButtonTextColor')||defaults.btnText);
+  document.documentElement.style.setProperty('--slot-background-color', localStorage.getItem('pickerSlotBgColor')||defaults.slotBg);
+
+  const savedOpacity = localStorage.getItem('pickerContainerOpacity');
+  containerOpacity = Number.isFinite(+savedOpacity) ? +savedOpacity : 0.5;
+  updateContainerOpacity(containerOpacity);
+
+  const savedSpin=parseInt(localStorage.getItem('pickerSpinDuration')); if(!isNaN(savedSpin)&&savedSpin>=1&&savedSpin<=10){spinTimeInSeconds=savedSpin;currentSpinDurationMS=savedSpin*1000;}
+  const savedAlign=localStorage.getItem('pickerVerticalAlignment')||'center'; document.documentElement.style.setProperty('--container-vertical-alignment', savedAlign); alignmentControls.querySelectorAll('button').forEach(btn=>btn.classList.toggle('active', btn.getAttribute('data-align')===savedAlign));
+
+  const savedImages=localStorage.getItem('pickerBgImages'); const savedIndex=localStorage.getItem('pickerBgImageIndex');
+  if(savedImages){try{ backgroundImages=JSON.parse(savedImages)||[]; currentBgIndex=Number.isFinite(+savedIndex)? +savedIndex : -1; applyBackgroundImage(); }catch{ localStorage.removeItem('pickerBgImages'); localStorage.removeItem('pickerBgImageIndex'); }} else { backgroundImages=[]; currentBgIndex=-1; document.documentElement.style.setProperty('--bg-image','none'); }
+
+  const savedList=localStorage.getItem('pickerNameList'); if(savedList!==null) nameListTextarea.value=savedList;
+  initialNameSnapshot = nameListTextarea.value;
+  parseNameList(true);
+
+  allowRepeats = localStorage.getItem('pickerAllowRepeats')==='1';
+  allowRepeatsCheckbox.checked=allowRepeats;
+
+  try{ winnerHistory=JSON.parse(localStorage.getItem('pickerWinnerHistory')||'[]'); }catch{ winnerHistory=[]; }
+  renderHistory();
+
+  parseLockedResults();
+  syncFullscreenUI(); viewport.focus();
+})();
+</script>
+</body>
+</html>
